@@ -3,19 +3,108 @@
  */
 package seniorSoftwareDeveloperTestAltair;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 
-import seniorSoftwareDeveloperTestAltair.fileUtils.FileUtils;
+@ExtendWith(MockitoExtension.class)
+class WordCounterTest {
+    @InjectMocks
+    private WordCounter wordCounter;
 
-public class WordCounterTest {
-    @Test public void testSomeLibraryMethod() throws IOException {
-        WordCounter classUnderTest = new WordCounter();
-        List<String> lines = Files.readAllLines(Paths.get(FileUtils.getResourcesTestFilePath("Text.txt")));
-		lines.stream().forEach(x-> System.out.println(x));
+    @Mock
+    private PrintStream printStream;
+
+    @Nested
+    @DisplayName("#countWords")
+    class CountWords {
+        @Test
+        @DisplayName("works as expected")
+        void success() {
+            List<String> lines = new ArrayList<>();
+            lines.add("word1 word2 word3 word2");
+            lines.add("word3 word2");
+            wordCounter.countWords(lines);
+
+            ArgumentCaptor<String> wordCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+            then(printStream)
+                    .should(times(3))
+                    .printf(eq("-  Word: %s  >> Occurrences: %s %n"), wordCaptor.capture(), longCaptor.capture());
+
+            assertThat(wordCaptor.getAllValues().get(0), is("word2"));
+            assertThat(longCaptor.getAllValues().get(0), is(3L));
+
+            assertThat(wordCaptor.getAllValues().get(1), is("word3"));
+            assertThat(longCaptor.getAllValues().get(1), is(2L));
+
+            assertThat(wordCaptor.getAllValues().get(2), is("word1"));
+            assertThat(longCaptor.getAllValues().get(2), is(1L));
+        }
+
+        @Test
+        @DisplayName("words are converted to lowercase")
+        void lowercase() {
+            wordCounter.countWords(Collections.singletonList("word WORD woRD"));
+
+            ArgumentCaptor<String> wordCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+            then(printStream)
+                    .should(times(1))
+                    .printf(anyString(), wordCaptor.capture(), longCaptor.capture());
+
+            assertThat(wordCaptor.getValue(), is("word"));
+            assertThat(longCaptor.getValue(), is(3L));
+        }
+
+        @Test
+        @DisplayName("words are split using punctuation and spacing characters")
+        void split() {
+            wordCounter.countWords(Collections.singletonList("word word;  word.word\tword.word"));
+
+            ArgumentCaptor<String> wordCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+            then(printStream)
+                    .should(times(1))
+                    .printf(anyString(), wordCaptor.capture(), longCaptor.capture());
+
+            assertThat(wordCaptor.getValue(), is("word"));
+            assertThat(longCaptor.getValue(), is(6L));
+        }
+
+        @Test
+        @DisplayName("can handle null list of lines")
+        void nullList() {
+            wordCounter.countWords(null);
+
+            then(printStream)
+                    .shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("can handle null lines")
+        void nullLines() {
+            wordCounter.countWords(Collections.singletonList(null));
+
+            then(printStream)
+                    .shouldHaveNoInteractions();
+        }
     }
 }
