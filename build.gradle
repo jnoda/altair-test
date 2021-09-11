@@ -12,14 +12,25 @@ plugins {
 }
 
 repositories {
-    // Use JCenter for resolving dependencies.
-    jcenter()
+    // removed JCenter, because is at end of life
+    mavenCentral()
 }
 
 dependencies {
     // Use JUnit test framework.
-    testImplementation 'junit:junit:4.13'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
+
+    // Use Mockito for mocking dependencies
+    testImplementation 'org.mockito:mockito-core:3.12.4'
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.12.4'
+
+    // Use Hamcrest to test assertions
+    testImplementation 'org.hamcrest:hamcrest:2.2'
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:29.0-jre'
+}
+
+test {
+    useJUnitPlatform()
 }
